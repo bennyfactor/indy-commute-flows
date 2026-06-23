@@ -151,18 +151,20 @@ function(el, x, data) {
     });
   }
 
-  var tries = 0;
+  var tries = 0, inited = false;
   function init() {
     if (!window.MapGLFlowmapPlugin || !data || !data.bg) {
       if (tries++ < 60) { setTimeout(init, 150); }
       return;
     }
+    if (inited) return;
     idx.bg = buildIndex(data.bg);
     if (data.zcta) idx.zcta = buildIndex(data.zcta);
     ensureHighlightLayers();
     setNativeVisibility(active);
     applyFlow('indy-bg');
     wire();
+    inited = true;
   }
   buildRadio();
   if (map.once) map.once('idle', init);
