@@ -1,0 +1,7 @@
+{
+  "name": "indy-commute-flows-capture",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "dependencies": { "playwright": "^1.48.0" }
+}

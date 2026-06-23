@@ -2,6 +2,9 @@ data/*.rds
 data/*.csv*
 data/lodes_raw/
 output/frames/
+output/*.mp4
+output/*.gif
 *.Rproj.user
 .Rhistory
 renv/library/
+node_modules/
