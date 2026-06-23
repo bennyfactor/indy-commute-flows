@@ -85,6 +85,12 @@ canvas opacity so the two-color highlight reads clearly.
 ./run.sh scripts/02-build-flowmap.R     # render with the node interaction
 ```
 
+A color **legend** (top-left) labels the inbound (rose) / outbound (gold) /
+selected-boundary (white) cues. When you **pin** a node (click), its **top 3
+inbound and top 3 outbound** partner nodes are labeled with the commuter count
+(the ZIP is shown too in ZIP/ZCTA mode), colored by direction. Labels appear on
+pin only and clear with the rest of the selection.
+
 ## Region
 
 15 IN counties: Marion, Hamilton, Hendricks, Boone, Johnson, Hancock, Morgan,
