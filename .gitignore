@@ -1,0 +1,7 @@
+data/*.rds
+data/*.csv*
+data/lodes_raw/
+output/frames/
+*.Rproj.user
+.Rhistory
+renv/library/
