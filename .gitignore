@@ -4,6 +4,8 @@ data/lodes_raw/
 output/frames/
 output/*.mp4
 output/*.gif
+output/*.html
+output/*_files/
 *.Rproj.user
 .Rhistory
 renv/library/
