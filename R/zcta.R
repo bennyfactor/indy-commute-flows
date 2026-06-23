@@ -36,6 +36,10 @@ build_zcta_flows <- function(counties, year) {
 
 # ZCTA centroids (lon/lat, EPSG:4326) for the ZCTAs present in `flows`.
 build_zcta_locations <- function(flows) {
+  # tigris can't filter ZCTAs by state for this vintage, so narrow the national
+  # download by Indiana ZIP prefixes (46xxx/47xxx). If a region ZCTA ever fell
+  # outside these prefixes its centroid would be missing — the caller's
+  # missing-centroid warning is the safety net.
   z <- tigris::zctas(cb = TRUE, year = 2020, starts_with = c("46", "47"),
                      progress_bar = FALSE)
   z <- sf::st_transform(z, 4326)
