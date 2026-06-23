@@ -8,6 +8,9 @@ built with R's [mapgl](https://walker-data.com/mapgl/) 0.5.0 `add_flowmap()`
 Inspired by Kyle Walker's Dallas–Fort Worth flow map; implementation pattern
 credit to Egor Kotov; Flowmap.gl by Ilya Boyandin.
 
+**▶ Live interactive map: https://bennyfactor.github.io/indy-commute-flows/**
+(use the top-right toggle to switch between block-group and ZIP/ZCTA resolution).
+
 ## Outputs
 
 - `output/indy-commute-flows.html` — interactive, self-contained widget (5.3 MB).
@@ -24,6 +27,17 @@ podman build -t indy-flows:latest .         # R + spatial stack + mapgl/lehdr/ti
 ./run.sh scripts/02-build-flowmap.R         # -> output/indy-commute-flows.html
 ./scripts/capture.sh                        # best-effort -> mp4/gif (host + Quadro P4000)
 ```
+
+## Publish (GitHub Pages)
+
+The live map is served from the `gh-pages` branch (a single self-contained
+`index.html`). To rebuild and redeploy after a data refresh:
+
+```bash
+./scripts/deploy-pages.sh                   # rebuild -> push gh-pages -> Pages serves it
+```
+
+`main` stays source-only; the built HTML is never committed to `main`.
 
 ## Resolution toggle: block group ↔ ZIP / ZCTA
 
