@@ -25,6 +25,32 @@ podman build -t indy-flows:latest .         # R + spatial stack + mapgl/lehdr/ti
 ./scripts/capture.sh                        # best-effort -> mp4/gif (host + Quadro P4000)
 ```
 
+## Resolution toggle: block group ↔ ZIP / ZCTA
+
+The interactive map has a **Resolution** radio (top-right): switch between
+block-group flows and ZIP-code flows in place (one layer shown at a time).
+
+**"ZIP" means ZCTA.** LODES has no native ZIP geography — its OD data is at
+census blocks. "ZIP code" here is the Census **ZCTA** (ZIP Code Tabulation
+Area), reached by aggregating block-level OD through the LODES block→ZCTA
+crosswalk (`lehdr::grab_crosswalk`, `tabblk2020 → zcta`). USPS ZIPs are mail
+routes, not polygons; ZCTA is the mappable approximation. ZCTA flows are
+coarser (hundreds of nodes vs ~1,500 block groups), so they are sparser and
+need no clustering, and LODES block-level fuzzing largely cancels out.
+
+The ZIP/ZCTA region uses the **same 15 counties**, expressed as the set of
+ZCTAs whose blocks fall in those counties (a ZCTA straddling the boundary is
+included if any of its blocks are in-region).
+
+### Rebuild with the toggle
+
+```bash
+./run.sh scripts/01-fetch-data.R        # block-group OD (writes data/lodes_year.txt)
+./run.sh scripts/01b-build-locations.R  # block-group centroids
+./run.sh scripts/01c-fetch-zcta-data.R  # ZCTA OD + centroids (block-level OD + crosswalk)
+./run.sh scripts/02-build-flowmap.R     # two-layer HTML with the resolution toggle
+```
+
 ## Region
 
 15 IN counties: Marion, Hamilton, Hendricks, Boone, Johnson, Hancock, Morgan,
