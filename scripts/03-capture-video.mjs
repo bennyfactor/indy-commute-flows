@@ -1,6 +1,6 @@
 // scripts/03-capture-video.mjs
-// Headless Chromium on the Quadro P4000: load the widget, run a slow zoom/pan
-// "tour", capture frames via CDP screencast/screenshots. Best-effort.
+// Headless Chromium: load the widget, run a slow zoom/pan "tour",
+// capture frames via screenshots. Best-effort.
 import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -18,24 +18,65 @@ const browser = await chromium.launch({
   ],
 });
 const page = await browser.newPage({ viewport: { width: 1600, height: 900 } });
+
+// Forward browser console to Node stdout so we can see diagnostics.
+page.on('console', msg => console.log('[browser]', msg.text()));
+
 await page.goto(HTML, { waitUntil: 'networkidle' });
 await page.waitForTimeout(6000); // let WebGL + flows initialize
 
-// Try to grab the MapLibre map instance the widget created, for a camera tour.
-await page.evaluate(() => {
+// Grab the MapLibre map instance the widget created.
+//
+// mapgl htmlwidget (mapgl >= 0.5) stores the map TWO ways:
+//   1. el.map   — the container div has .map assigned directly after style.load
+//   2. HTMLWidgets.find("#id").getMap() — the factory return object has getMap()
+//
+// We try both in order.
+const mapFound = await page.evaluate(() => {
   window.__indyMap = null;
   try {
-    // mapgl/maplibre htmlwidget keeps the map on the widget element.
-    const el = document.querySelector('.maplibregl-map') || document.querySelector('.mapboxgl-map');
-    if (el && el._maplibregl_map) window.__indyMap = el._maplibregl_map;
-    // Fallback: scan for any object exposing flyTo on the global widget registry.
-    if (!window.__indyMap && window.HTMLWidgets) {
-      for (const inst of (window.HTMLWidgets.findAll ? window.HTMLWidgets.findAll('.maplibregl-map') : [])) {
-        if (inst && inst.flyTo) { window.__indyMap = inst; break; }
+    // Method 1: el.map on the maplibre container div.
+    const el = document.querySelector('.maplibregl-map');
+    if (el && el.map && typeof el.map.flyTo === 'function') {
+      window.__indyMap = el.map;
+      console.log('__indyMap found via el.map on', el.id);
+      return 'el.map';
+    }
+
+    // Method 2: HTMLWidgets widget instance .getMap()
+    if (window.HTMLWidgets && window.HTMLWidgets.find) {
+      const mapEl = document.querySelector('.maplibregl-map');
+      if (mapEl) {
+        const widget = window.HTMLWidgets.find('#' + mapEl.id);
+        if (widget && typeof widget.getMap === 'function') {
+          const m = widget.getMap();
+          if (m && typeof m.flyTo === 'function') {
+            window.__indyMap = m;
+            console.log('__indyMap found via HTMLWidgets.find().getMap() on', mapEl.id);
+            return 'HTMLWidgets.getMap';
+          }
+        }
       }
     }
-  } catch (e) {}
+
+    // Method 3: scan all window properties for an object with flyTo + getCenter
+    for (const key of Object.keys(window)) {
+      const val = window[key];
+      if (val && typeof val === 'object' && typeof val.flyTo === 'function' &&
+          typeof val.getCenter === 'function') {
+        window.__indyMap = val;
+        console.log('__indyMap found via window scan: window.' + key);
+        return 'window.' + key;
+      }
+    }
+  } catch (e) {
+    console.log('__indyMap lookup error: ' + e.message);
+  }
+  console.log('__indyMap NOT FOUND — tour will be static');
+  return null;
 });
+
+console.log(`[node] Map handle method: ${mapFound || 'none — static capture'}`);
 
 // Camera tour waypoints (hubs). flyTo is best-effort; if no map handle, we just
 // record the default animated view.
@@ -44,7 +85,7 @@ const tour = [
   { center: [-86.176, 39.776], zoom: 12.5, name: 'medical-iupui' },// IU Health / IUPUI
   { center: [-86.295, 39.717], zoom: 12.0, name: 'airport-IND' },  // IND airport
   { center: [-86.118, 39.978], zoom: 11.0, name: 'carmel-fishers' },// north suburbs
-  { center: [-86.20, 39.90],   zoom: 8.5,  name: 'region' },       // pull back
+  { center: [-86.20,  39.90],  zoom: 8.5,  name: 'region' },       // pull back
 ];
 
 let n = 0;
@@ -54,10 +95,14 @@ const grab = async () => {
 };
 
 for (const wp of tour) {
-  await page.evaluate(({center, zoom}) => {
-    if (window.__indyMap && window.__indyMap.flyTo)
+  const flew = await page.evaluate(({center, zoom, name}) => {
+    if (window.__indyMap && window.__indyMap.flyTo) {
       window.__indyMap.flyTo({ center, zoom, duration: 3000 });
+      return true;
+    }
+    return false;
   }, wp);
+  console.log(`[node] waypoint ${wp.name}: flyTo=${flew}`);
   // ~3s of flight + dwell, sampling ~10 fps
   for (let i = 0; i < 50; i++) { await grab(); await page.waitForTimeout(100); }
 }

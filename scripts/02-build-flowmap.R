@@ -1,6 +1,25 @@
 # scripts/02-build-flowmap.R
 suppressMessages({library(mapgl); library(dplyr); library(htmlwidgets)})
 
+# JS injected via onRender to expose the MapLibre map at window.__indyMap.
+# mapgl htmlwidget already stores the map on el.map; this just aliases it to
+# a stable global for headless capture (03-capture-video.mjs).
+EXPOSE_MAP_JS <- "
+function(el, x) {
+  // el.map is set synchronously by the mapgl renderValue; alias to global.
+  // Also hook style.load in case the widget fires onRender before the map
+  // is fully ready, so we always get the live instance.
+  var setGlobal = function() {
+    if (el.map && typeof el.map.flyTo === 'function') {
+      window.__indyMap = el.map;
+    }
+  };
+  setGlobal();
+  if (el.map && el.map.on) {
+    el.map.on('style.load', setGlobal);
+  }
+}"
+
 flows <- readRDS("data/flows.rds")
 locs  <- readRDS("data/locations.rds")
 
@@ -29,7 +48,8 @@ m <- maplibre(style = carto_style("dark-matter"),
     flow_adaptive_scales_enabled = TRUE,
     flow_location_totals_enabled = TRUE,
     tooltip = TRUE
-  )
+  ) |>
+  htmlwidgets::onRender(EXPOSE_MAP_JS)
 
 dir.create("output", showWarnings = FALSE)
 htmlwidgets::saveWidget(m, "output/indy-commute-flows.html",
