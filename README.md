@@ -65,6 +65,26 @@ included if any of its blocks are in-region).
 ./run.sh scripts/02-build-flowmap.R     # two-layer HTML with the resolution toggle
 ```
 
+## Interactive node highlight
+
+Hover any node (a block-group or ZIP/ZCTA centroid) to draw that area's boundary
+and split its commute flows into two colors — **inbound** (flows *to* the node,
+rose `#FF4D6D`) and **outbound** (flows *from* the node, gold `#FFD166`) — over a
+dimmed base. **Click** a node to pin the selection (move the mouse freely);
+**Esc** or a click on empty space clears it. Works in both resolutions.
+
+Boundaries come from simplified census block-group / ZCTA polygons
+(`scripts/01d-build-polygons.R`). The highlight is drawn as native MapLibre line
+layers from the embedded flows, and the base Flowmap.gl layer is dimmed via its
+canvas opacity so the two-color highlight reads clearly.
+
+### Rebuild step (in addition to the toggle steps)
+
+```bash
+./run.sh scripts/01d-build-polygons.R   # boundary polygons -> data/polys_{bg,zcta}.rds
+./run.sh scripts/02-build-flowmap.R     # render with the node interaction
+```
+
 ## Region
 
 15 IN counties: Marion, Hamilton, Hendricks, Boone, Johnson, Hancock, Morgan,
