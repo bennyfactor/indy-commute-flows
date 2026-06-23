@@ -8,3 +8,5 @@ output/*.gif
 .Rhistory
 renv/library/
 node_modules/
+.cache/
+data/lodes_year.txt
