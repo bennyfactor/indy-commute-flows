@@ -1,10 +1,10 @@
 # R/interaction_js.R — onRender JS for the node hover/click interaction.
-# Receives (el, x, data); data = { bg:{ids,lon,lat,o,d,c}, zcta:{...} } where
-# o/d are 0-based indices into ids and c is the commuter count. Builds inbound
-# (#FF4D6D) and outbound (#FFD166) line layers + a white polygon outline, dims
-# the Flowmap.gl deck canvas on focus, supports hover-preview + click-to-pin,
+# Receives (el, x, data); data = { bg:{ids,lon,lat,o,d,c}, zcta:{...}, block:{...} }
+# where o/d are 0-based indices into ids and c is the commuter count. Builds
+# inbound (#FF4D6D) and outbound (#FFD166) line layers + a white polygon outline,
+# dims the Flowmap.gl deck canvas on focus, supports hover-preview + click-to-pin,
 # shows an always-on color legend, and labels the pinned node's top 3 inbound /
-# top 3 outbound partners.
+# top 3 outbound partners. Generalized over all resolutions in RES.
 INTERACTION_JS <- "
 function(el, x, data) {
   var map = el.map;
@@ -12,9 +12,11 @@ function(el, x, data) {
   window.__indyMap = map;
 
   var RES = {
-    bg:   { flow:'indy-bg',   hits:'hits-bg',   outline:'outline-bg',   inbound:'inbound-bg',   outbound:'outbound-bg' },
-    zcta: { flow:'indy-zcta', hits:'hits-zcta', outline:'outline-zcta', inbound:'inbound-zcta', outbound:'outbound-zcta' }
+    bg:    { flow:'indy-bg',    hits:'hits-bg',    outline:'outline-bg',    inbound:'inbound-bg',    outbound:'outbound-bg' },
+    zcta:  { flow:'indy-zcta',  hits:'hits-zcta',  outline:'outline-zcta',  inbound:'inbound-zcta',  outbound:'outbound-zcta' },
+    block: { flow:'indy-block', hits:'hits-block', outline:'outline-block', inbound:'inbound-block', outbound:'outbound-block' }
   };
+  var KEYS = Object.keys(RES);
   var active = 'bg', pinnedId = null, lastSel = null, idx = {};
 
   function buildIndex(d) {
@@ -55,7 +57,6 @@ function(el, x, data) {
     if (c) { c.style.transition = 'opacity 0.15s'; c.style.opacity = on ? '0.18' : '1'; }
   }
 
-  // ---- top-3 in / top-3 out partner labels (pin only) ----
   function topN(list, n) {
     return list.slice().sort(function(a, b) { return b[1] - a[1]; }).slice(0, n);
   }
@@ -90,7 +91,7 @@ function(el, x, data) {
   }
   function clear() {
     lastSel = null;
-    ['bg','zcta'].forEach(function(res) {
+    KEYS.forEach(function(res) {
       var r = RES[res];
       if (map.getSource(r.inbound))  map.getSource(r.inbound).setData(fc([]));
       if (map.getSource(r.outbound)) map.getSource(r.outbound).setData(fc([]));
@@ -101,7 +102,7 @@ function(el, x, data) {
   }
 
   function ensureHighlightLayers() {
-    ['bg','zcta'].forEach(function(res) {
+    KEYS.forEach(function(res) {
       var r = RES[res];
       [[r.inbound, '#FF4D6D'], [r.outbound, '#FFD166']].forEach(function(t) {
         if (!map.getSource(t[0])) map.addSource(t[0], { type:'geojson', data:fc([]) });
@@ -113,7 +114,6 @@ function(el, x, data) {
         });
       });
     });
-    // Single shared label layer (always visible; emptied when not pinned).
     if (!map.getSource('partner-labels')) map.addSource('partner-labels', { type:'geojson', data:fc([]) });
     if (!map.getLayer('partner-labels')) map.addLayer({
       id:'partner-labels', type:'symbol', source:'partner-labels',
@@ -132,7 +132,7 @@ function(el, x, data) {
     });
   }
   function setNativeVisibility(res) {
-    ['bg','zcta'].forEach(function(rr) {
+    KEYS.forEach(function(rr) {
       var r = RES[rr], vis = (rr === res) ? 'visible' : 'none';
       [r.hits, r.outline, r.inbound, r.outbound].forEach(function(lid) {
         if (map.getLayer(lid)) map.setLayoutProperty(lid, 'visibility', vis);
@@ -142,14 +142,15 @@ function(el, x, data) {
   function applyFlow(chosen) {
     var p = window.MapGLFlowmapPlugin; if (!p) return false;
     var ok = true;
-    ['indy-bg','indy-zcta'].forEach(function(fid) {
+    KEYS.forEach(function(res) {
+      var fid = RES[res].flow;
       if (!p.setVisibility(map, fid, fid === chosen ? 'visible':'none')) ok = false;
     });
     return ok;
   }
 
   function wire() {
-    ['bg','zcta'].forEach(function(res) {
+    KEYS.forEach(function(res) {
       var r = RES[res];
       map.on('mousemove', r.hits, function(e) {
         if (res !== active || pinnedId || !e.features || !e.features.length) return;
@@ -202,13 +203,14 @@ function(el, x, data) {
       '<div style=\"font-weight:600;margin-bottom:4px;\">Resolution</div>' +
       '<label style=\"display:block;cursor:pointer;\"><input type=\"radio\" name=\"indy-res\" value=\"bg\" checked> Block group</label>' +
       '<label style=\"display:block;cursor:pointer;\"><input type=\"radio\" name=\"indy-res\" value=\"zcta\"> ZIP code</label>' +
+      '<label style=\"display:block;cursor:pointer;\"><input type=\"radio\" name=\"indy-res\" value=\"block\"> Census block</label>' +
       '<div style=\"margin-top:6px;font-size:11px;color:#9bd;\">hover a node &middot; click to pin &middot; Esc clears</div>';
     el.appendChild(ctrl);
     ctrl.addEventListener('change', function(e) {
       if (e.target && e.target.name === 'indy-res') {
         pinnedId = null; clear();
         active = e.target.value;
-        applyFlow(active === 'bg' ? 'indy-bg' : 'indy-zcta');
+        applyFlow(RES[active].flow);
         setNativeVisibility(active);
       }
     });
@@ -221,11 +223,10 @@ function(el, x, data) {
       return;
     }
     if (inited) return;
-    idx.bg = buildIndex(data.bg);
-    if (data.zcta) idx.zcta = buildIndex(data.zcta);
+    KEYS.forEach(function(res) { if (data[res]) idx[res] = buildIndex(data[res]); });
     ensureHighlightLayers();
     setNativeVisibility(active);
-    applyFlow('indy-bg');
+    applyFlow(RES[active].flow);
     wire();
     inited = true;
   }
