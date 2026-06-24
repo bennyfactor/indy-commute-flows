@@ -85,6 +85,16 @@ canvas opacity so the two-color highlight reads clearly.
 ./run.sh scripts/02-build-flowmap.R     # render with the node interaction
 ```
 
+A third **Census block** option shows the most granular LODES geography (the
+level the data is built from). Block-to-block LODES is heavily noise-infused, so
+this layer is thresholded to commuter **count ≥ 3** — it drops the ~873k count-1
+fuzzing pairs in the region and shows the strongest block-to-block corridors
+(~19.8k flows / ~8k blocks), not every commuter.
+
+```bash
+./run.sh scripts/01e-fetch-block-data.R  # census-block OD (count>=3) + centroids + polygons
+```
+
 A color **legend** (top-left) labels the inbound (rose) / outbound (gold) /
 selected-boundary (white) cues. When you **pin** a node (click), its **top 3
 inbound and top 3 outbound** partner nodes are labeled with the commuter count
