@@ -39,8 +39,12 @@ build_block_locations <- function(blocks_sf, flows) {
 
 build_block_polygons <- function(blocks_sf, flows) {
   used <- unique(c(flows$origin, flows$dest))
-  b <- blocks_sf[as.character(blocks_sf$GEOID20) %in% used, ]
-  b <- sf::st_transform(b, 4326)
-  b <- sf::st_simplify(b, preserveTopology = TRUE, dTolerance = 0.0004)
-  data.frame(id = as.character(b$GEOID20)) |> sf::st_set_geometry(sf::st_geometry(b))
+  b  <- blocks_sf[as.character(blocks_sf$GEOID20) %in% used, ]
+  bm <- sf::st_transform(b, 3857)
+  g  <- suppressWarnings(sf::st_simplify(sf::st_geometry(bm),
+                                         preserveTopology = TRUE, dTolerance = 20))
+  empty <- sf::st_is_empty(g)
+  if (any(empty)) g[empty] <- sf::st_geometry(bm)[empty]   # keep original for tiny blocks
+  out <- sf::st_sf(id = as.character(bm$GEOID20), geometry = g)
+  sf::st_transform(out, 4326)
 }

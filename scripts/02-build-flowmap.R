@@ -6,10 +6,13 @@ flows_bg    <- readRDS('data/flows.rds')
 locs_bg     <- readRDS('data/locations.rds')
 flows_zcta  <- readRDS('data/flows_zcta.rds')
 locs_zcta   <- readRDS('data/locations_zcta.rds')
+flows_tract <- readRDS('data/flows_tract.rds')
+locs_tract  <- readRDS('data/locations_tract.rds')
 flows_block <- readRDS('data/flows_block.rds')
 locs_block  <- readRDS('data/locations_block.rds')
 polys_bg    <- readRDS('data/polys_bg.rds')
 polys_zcta  <- readRDS('data/polys_zcta.rds')
+polys_tract <- readRDS('data/polys_tract.rds')
 polys_block <- readRDS('data/polys_block.rds')
 
 MAX_FLOWS <- 40000
@@ -23,10 +26,9 @@ cap_flows <- function(flows, valid, label) {
 }
 flows_bg    <- cap_flows(flows_bg,    locs_bg$id,    'block-group')
 flows_zcta  <- cap_flows(flows_zcta,  locs_zcta$id,  'zcta')
+flows_tract <- cap_flows(flows_tract, locs_tract$id, 'tract')
 flows_block <- cap_flows(flows_block, locs_block$id, 'block')
 
-# Compact payload for the interaction JS: ids + lon/lat + flows as 0-based
-# index triples (o,d,c). Uses the SAME (capped) flows shown by the flowmap.
 make_payload <- function(flows, locs) {
   ids <- as.character(locs$id)
   pos <- setNames(seq_along(ids) - 1L, ids)
@@ -41,14 +43,17 @@ make_payload <- function(flows, locs) {
 }
 payload <- list(bg    = make_payload(flows_bg,    locs_bg),
                 zcta  = make_payload(flows_zcta,  locs_zcta),
+                tract = make_payload(flows_tract, locs_tract),
                 block = make_payload(flows_block, locs_block))
 
 hits_bg    <- sf::st_as_sf(locs_bg,    coords = c('lon','lat'), crs = 4326)
 hits_zcta  <- sf::st_as_sf(locs_zcta,  coords = c('lon','lat'), crs = 4326)
+hits_tract <- sf::st_as_sf(locs_tract, coords = c('lon','lat'), crs = 4326)
 hits_block <- sf::st_as_sf(locs_block, coords = c('lon','lat'), crs = 4326)
 
 message('BG: ', nrow(flows_bg), '/', nrow(locs_bg),
         ' | ZCTA: ', nrow(flows_zcta), '/', nrow(locs_zcta),
+        ' | TRACT: ', nrow(flows_tract), '/', nrow(locs_tract),
         ' | BLOCK: ', nrow(flows_block), '/', nrow(locs_block))
 
 empty_filter <- list('==', list('get','id'), '')
@@ -65,19 +70,25 @@ m <- maplibre(style = carto_style('dark-matter'),
               center = c(-86.2, 39.9), zoom = 8, projection = 'mercator') |>
   fm('indy-bg',    locs_bg,    flows_bg,    'visible') |>
   fm('indy-zcta',  locs_zcta,  flows_zcta,  'none') |>
+  fm('indy-tract', locs_tract, flows_tract, 'none') |>
   fm('indy-block', locs_block, flows_block, 'none') |>
   add_source(id = 'poly-bg',    data = polys_bg) |>
   add_source(id = 'poly-zcta',  data = polys_zcta) |>
+  add_source(id = 'poly-tract', data = polys_tract) |>
   add_source(id = 'poly-block', data = polys_block) |>
   add_line_layer(id = 'outline-bg',    source = 'poly-bg',
                  line_color = '#FFFFFF', line_width = 2, filter = empty_filter) |>
   add_line_layer(id = 'outline-zcta',  source = 'poly-zcta',
+                 line_color = '#FFFFFF', line_width = 2, filter = empty_filter) |>
+  add_line_layer(id = 'outline-tract', source = 'poly-tract',
                  line_color = '#FFFFFF', line_width = 2, filter = empty_filter) |>
   add_line_layer(id = 'outline-block', source = 'poly-block',
                  line_color = '#FFFFFF', line_width = 2, filter = empty_filter) |>
   add_circle_layer(id = 'hits-bg',    source = hits_bg,
                    circle_color = '#ffffff', circle_opacity = 0, circle_radius = 10) |>
   add_circle_layer(id = 'hits-zcta',  source = hits_zcta,
+                   circle_color = '#ffffff', circle_opacity = 0, circle_radius = 12) |>
+  add_circle_layer(id = 'hits-tract', source = hits_tract,
                    circle_color = '#ffffff', circle_opacity = 0, circle_radius = 12) |>
   add_circle_layer(id = 'hits-block', source = hits_block,
                    circle_color = '#ffffff', circle_opacity = 0, circle_radius = 8) |>

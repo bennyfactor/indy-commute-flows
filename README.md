@@ -39,7 +39,7 @@ The live map is served from the `gh-pages` branch (a single self-contained
 
 `main` stays source-only; the built HTML is never committed to `main`.
 
-## Resolution toggle: block group ↔ ZIP / ZCTA
+## Resolution toggle: ZIP / tract / block group / block
 
 The interactive map has a **Resolution** radio (top-right): switch between
 block-group flows and ZIP-code flows in place (one layer shown at a time).
@@ -94,6 +94,15 @@ fuzzing pairs in the region and shows the strongest block-to-block corridors
 
 ```bash
 ./run.sh scripts/01e-fetch-block-data.R  # census-block OD (count>=3) + centroids + polygons
+```
+
+The toggle offers four resolutions, listed largest → smallest by area: **ZIP code**
+(ZCTA) → **Census tract** → **Census block group** (the default view) → **Census
+block**. Census tract is the easy middle level — `lehdr` aggregates to it natively
+(no crosswalk).
+
+```bash
+./run.sh scripts/01f-fetch-tract-data.R  # census-tract OD + centroids + polygons
 ```
 
 A color **legend** (top-left) labels the inbound (rose) / outbound (gold) /

@@ -1,10 +1,10 @@
 # R/interaction_js.R — onRender JS for the node hover/click interaction.
-# Receives (el, x, data); data = { bg:{ids,lon,lat,o,d,c}, zcta:{...}, block:{...} }
-# where o/d are 0-based indices into ids and c is the commuter count. Builds
-# inbound (#FF4D6D) and outbound (#FFD166) line layers + a white polygon outline,
-# dims the Flowmap.gl deck canvas on focus, supports hover-preview + click-to-pin,
-# shows an always-on color legend, and labels the pinned node's top 3 inbound /
-# top 3 outbound partners. Generalized over all resolutions in RES.
+# Receives (el, x, data); data has one entry per resolution (bg/zcta/block/tract),
+# each {ids,lon,lat,o,d,c} with o/d 0-based indices into ids and c the commuter
+# count. Builds inbound (#FF4D6D) / outbound (#FFD166) line layers + a white
+# polygon outline, dims the Flowmap.gl deck canvas on focus, supports hover-preview
+# + click-to-pin, shows an always-on color legend, and labels the pinned node's
+# top 3 inbound / top 3 outbound partners. Generalized over all resolutions in RES.
 INTERACTION_JS <- "
 function(el, x, data) {
   var map = el.map;
@@ -14,7 +14,8 @@ function(el, x, data) {
   var RES = {
     bg:    { flow:'indy-bg',    hits:'hits-bg',    outline:'outline-bg',    inbound:'inbound-bg',    outbound:'outbound-bg' },
     zcta:  { flow:'indy-zcta',  hits:'hits-zcta',  outline:'outline-zcta',  inbound:'inbound-zcta',  outbound:'outbound-zcta' },
-    block: { flow:'indy-block', hits:'hits-block', outline:'outline-block', inbound:'inbound-block', outbound:'outbound-block' }
+    block: { flow:'indy-block', hits:'hits-block', outline:'outline-block', inbound:'inbound-block', outbound:'outbound-block' },
+    tract: { flow:'indy-tract', hits:'hits-tract', outline:'outline-tract', inbound:'inbound-tract', outbound:'outbound-tract' }
   };
   var KEYS = Object.keys(RES);
   var active = 'bg', pinnedId = null, lastSel = null, idx = {};
@@ -199,11 +200,17 @@ function(el, x, data) {
     ctrl.style.cssText = 'position:absolute;top:10px;right:10px;z-index:1000;' +
       'background:rgba(20,20,20,0.85);color:#eee;padding:8px 10px;border-radius:6px;' +
       'font:13px/1.4 system-ui,sans-serif;';
+    var opt = function(value, label, checked) {
+      return '<label style=\"display:block;cursor:pointer;\">' +
+        '<input type=\"radio\" name=\"indy-res\" value=\"' + value + '\"' +
+        (checked ? ' checked' : '') + '> ' + label + '</label>';
+    };
     ctrl.innerHTML =
       '<div style=\"font-weight:600;margin-bottom:4px;\">Resolution</div>' +
-      '<label style=\"display:block;cursor:pointer;\"><input type=\"radio\" name=\"indy-res\" value=\"bg\" checked> Block group</label>' +
-      '<label style=\"display:block;cursor:pointer;\"><input type=\"radio\" name=\"indy-res\" value=\"zcta\"> ZIP code</label>' +
-      '<label style=\"display:block;cursor:pointer;\"><input type=\"radio\" name=\"indy-res\" value=\"block\"> Census block</label>' +
+      opt('zcta',  'ZIP code', false) +
+      opt('tract', 'Census tract', false) +
+      opt('bg',    'Census block group', true) +
+      opt('block', 'Census block', false) +
       '<div style=\"margin-top:6px;font-size:11px;color:#9bd;\">hover a node &middot; click to pin &middot; Esc clears</div>';
     el.appendChild(ctrl);
     ctrl.addEventListener('change', function(e) {
