@@ -39,7 +39,7 @@ The live map is served from the `gh-pages` branch (a single self-contained
 
 `main` stays source-only; the built HTML is never committed to `main`.
 
-## Resolution toggle: block group ↔ ZIP / ZCTA
+## Resolution toggle: ZIP / tract / block group / block
 
 The interactive map has a **Resolution** radio (top-right): switch between
 block-group flows and ZIP-code flows in place (one layer shown at a time).
