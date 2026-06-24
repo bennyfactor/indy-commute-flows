@@ -62,19 +62,20 @@ included if any of its blocks are in-region).
 ./run.sh scripts/01-fetch-data.R        # block-group OD (writes data/lodes_year.txt)
 ./run.sh scripts/01b-build-locations.R  # block-group centroids
 ./run.sh scripts/01c-fetch-zcta-data.R  # ZCTA OD + centroids (block-level OD + crosswalk)
-./run.sh scripts/02-build-flowmap.R     # two-layer HTML with the resolution toggle
+./run.sh scripts/02-build-flowmap.R     # multi-layer HTML with the resolution toggle
 ```
 
 ## Interactive node highlight
 
-Hover any node (a block-group or ZIP/ZCTA centroid) to draw that area's boundary
-and split its commute flows into two colors — **inbound** (flows *to* the node,
-rose `#FF4D6D`) and **outbound** (flows *from* the node, gold `#FFD166`) — over a
-dimmed base. **Click** a node to pin the selection (move the mouse freely);
-**Esc** or a click on empty space clears it. Works in both resolutions.
+Hover any node (a block-group, ZIP/ZCTA, or census-block centroid) to draw that
+area's boundary and split its commute flows into two colors — **inbound** (flows
+*to* the node, rose `#FF4D6D`) and **outbound** (flows *from* the node, gold
+`#FFD166`) — over a dimmed base. **Click** a node to pin the selection (move the
+mouse freely); **Esc** or a click on empty space clears it. Works in all three
+resolutions.
 
-Boundaries come from simplified census block-group / ZCTA polygons
-(`scripts/01d-build-polygons.R`). The highlight is drawn as native MapLibre line
+Boundaries come from simplified census block-group / ZCTA / census-block polygons
+(`scripts/01d-build-polygons.R`, `scripts/01e-fetch-block-data.R`). The highlight is drawn as native MapLibre line
 layers from the embedded flows, and the base Flowmap.gl layer is dimmed via its
 canvas opacity so the two-color highlight reads clearly.
 
