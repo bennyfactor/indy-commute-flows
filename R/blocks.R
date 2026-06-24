@@ -41,6 +41,6 @@ build_block_polygons <- function(blocks_sf, flows) {
   used <- unique(c(flows$origin, flows$dest))
   b <- blocks_sf[as.character(blocks_sf$GEOID20) %in% used, ]
   b <- sf::st_transform(b, 4326)
-  b <- sf::st_simplify(b, preserveTopology = TRUE, dTolerance = 0.0004)
+  b <- sf::st_simplify(b, preserveTopology = TRUE, dTolerance = 0.0008)
   data.frame(id = as.character(b$GEOID20)) |> sf::st_set_geometry(sf::st_geometry(b))
 }
