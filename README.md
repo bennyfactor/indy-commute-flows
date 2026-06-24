@@ -96,6 +96,15 @@ fuzzing pairs in the region and shows the strongest block-to-block corridors
 ./run.sh scripts/01e-fetch-block-data.R  # census-block OD (count>=3) + centroids + polygons
 ```
 
+The toggle offers four resolutions, listed largest → smallest by area: **ZIP code**
+(ZCTA) → **Census tract** → **Census block group** (the default view) → **Census
+block**. Census tract is the easy middle level — `lehdr` aggregates to it natively
+(no crosswalk).
+
+```bash
+./run.sh scripts/01f-fetch-tract-data.R  # census-tract OD + centroids + polygons
+```
+
 A color **legend** (top-left) labels the inbound (rose) / outbound (gold) /
 selected-boundary (white) cues. When you **pin** a node (click), its **top 3
 inbound and top 3 outbound** partner nodes are labeled with the commuter count
