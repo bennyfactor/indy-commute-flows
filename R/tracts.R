@@ -36,8 +36,12 @@ build_tract_locations <- function(tracts_sf, flows) {
 
 build_tract_polygons <- function(tracts_sf, flows) {
   used <- unique(c(flows$origin, flows$dest))
-  t <- tracts_sf[as.character(tracts_sf$GEOID) %in% used, ]
-  t <- sf::st_transform(t, 4326)
-  t <- sf::st_simplify(t, preserveTopology = TRUE, dTolerance = 0.0004)
-  data.frame(id = as.character(t$GEOID)) |> sf::st_set_geometry(sf::st_geometry(t))
+  t  <- tracts_sf[as.character(tracts_sf$GEOID) %in% used, ]
+  tm <- sf::st_transform(t, 3857)
+  g  <- suppressWarnings(sf::st_simplify(sf::st_geometry(tm),
+                                         preserveTopology = TRUE, dTolerance = 20))
+  empty <- sf::st_is_empty(g)
+  if (any(empty)) g[empty] <- sf::st_geometry(tm)[empty]
+  out <- sf::st_sf(id = as.character(tm$GEOID), geometry = g)
+  sf::st_transform(out, 4326)
 }
